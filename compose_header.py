@@ -140,7 +140,7 @@ def build_banner(bg_path, date_label, period, font_path):
     return banner
 
 
-def build(data, bg_path, font_path, out_path, quality):
+def build(data, bg_path, font_path, out_path, quality, out_width=None):
     cats = data["categories"][:4]
     f_chip = ImageFont.truetype(font_path, 20)
     f_item = ImageFont.truetype(font_path, 22)
@@ -188,6 +188,8 @@ def build(data, bg_path, font_path, out_path, quality):
     d.text((PAD + 4, total_h - 36), "▼ 全ニュースの要約・出典リンクはこの下に",
            font=f_foot, fill=MUTED)
 
+    if out_width and out_width != W:
+        img = img.resize((out_width, round(total_h * out_width / W)), Image.LANCZOS)
     img.save(out_path, "JPEG", quality=quality, optimize=True, progressive=True)
     return out_path
 
@@ -200,15 +202,17 @@ def main():
                                                  "assets", "bg_main.jpg"))
     ap.add_argument("--font", default=None)
     ap.add_argument("--quality", type=int, default=60)
+    ap.add_argument("--width", type=int, default=0,
+                    help="final output width in px (0 = keep the native 960)")
     args = ap.parse_args()
 
     with open(args.json_path, encoding="utf-8") as f:
         data = json.load(f)
-    out = build(data, args.bg, find_font(args.font), args.out, args.quality)
+    out = build(data, args.bg, find_font(args.font), args.out, args.quality, args.width)
     size = os.path.getsize(out)
     print(f"OK {out} {size} bytes ({size/1024:.0f} KB)")
-    if size > 90_000:
-        print("WARN: larger than 90KB — rerun with a lower --quality")
+    if size > 150_000:
+        print("WARN: larger than 150KB — rerun with a lower --quality")
 
 
 if __name__ == "__main__":

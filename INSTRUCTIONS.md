@@ -3,9 +3,9 @@
 ## 全体の流れ
 1. ニュース収集（WebSearch）
 2. `/tmp/digest.json` を書く
-3. ヘッダー画像（本日の一覧を1枚にまとめた画像）を生成する
+3. ヘッダー画像（本日の一覧を1枚にまとめた画像）を生成し、リポジトリに push する
 4. HTMLメール本文を組み立てる
-5. Gmail下書きを作成する（画像を添付）
+5. Gmail下書きを作成する（画像はURLで渡す。添付もbase64も使わない）
 6. 結果を報告する
 
 **最重要**: 途中で何が失敗しても、必ず手順5の「下書き作成」まで到達すること。画像が作れなければ画像なしで下書きを作る。下書きが作られない日を絶対に作らない。
@@ -97,16 +97,20 @@ REPO=$(git rev-parse --show-toplevel 2>/dev/null || pwd); echo "REPO=$REPO"; ls 
 ```
 `compose_header.py` が見つからない場合はリポジトリを取得できていない。その時は画像生成を諦め、手順5を「画像なし」で実行する。
 
-### 3-3. 実行して base64 にする
+### 3-3. 画像を作ってリポジトリに push する
 ```bash
-python3 "$REPO/compose_header.py" /tmp/digest.json -o /tmp/header.jpg && ls -l /tmp/header.jpg
-base64 -w0 /tmp/header.jpg > /tmp/header.b64 && wc -c /tmp/header.b64
+TODAY=$(TZ=Asia/Tokyo date +%Y-%m-%d)
+mkdir -p "$REPO/daily"
+python3 "$REPO/compose_header.py" /tmp/digest.json -o "$REPO/daily/$TODAY.jpg" && ls -l "$REPO/daily/$TODAY.jpg"
+cd "$REPO" && git add "daily/$TODAY.jpg" \
+  && git -c user.email=ai-news-bot@example.com -c user.name="ai-news-bot" commit -q -m "daily header $TODAY" \
+  && git push origin HEAD:main 2>&1 | tail -3
+echo "IMAGE_URL=https://raw.githubusercontent.com/kenzo07-art/ai-news-assets/main/daily/$TODAY.jpg"
 ```
-- 背景アート `$REPO/assets/bg_main.jpg` があれば自動で使われる。無い場合はスクリプトが背景を自前で描くので、そのまま進めてよい
-- 日本語フォントは `/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf` が自動で使われる
-- `wc -c` が **130000 を超えたら** `--quality 42` を付けて作り直す
-- `cat /tmp/header.b64` で中身を取得し、手順5の添付にそのまま使う。**1文字も改変・省略・折り返しをしない**
-- ここで失敗した場合は画像を諦め、手順5を「画像なし」で実行する（下書き作成は必ず行う）
+- 背景アート `$REPO/assets/bg_main.jpg` は自動で使われる。日本語フォントも自動で見つかる
+- **画像の base64 をメール本文やツールの引数に貼り付けてはいけない**（巨大すぎて実行が止まる）。画像の受け渡しは必ずこの push 経由で行う
+- push に成功したら、上の `IMAGE_URL=` の値を手順5で使う
+- 生成または push に失敗した場合は画像を諦め、手順5を「画像なし」で実行する（下書き作成は必ず行う）
 
 ---
 
@@ -136,14 +140,12 @@ Gmailコネクターの `create_draft` を使う。
 - `to`: `bknb.yone.ken@gmail.com` と `kenichiro.hayashi@persol.co.jp` の**両方**
 - `subject`: `【AIニュースダイジェスト】YYYY年MM月DD日（曜日）`
   - **このプレフィックスは絶対に変更しない**。送信用スクリプト（Apps Script）がこの文字列で下書きを見つけて送信しているため、変えると配信が止まる
-- `htmlBody`: 手順4のHTML
+- `htmlBody`: 手順4のHTML。ただし本文中の `%%HEADER_IMAGE%%` を次のように置き換える:
+  - 画像を push できた場合 → `%%HEADER_IMAGE:https://raw.githubusercontent.com/kenzo07-art/ai-news-assets/main/daily/YYYY-MM-DD.jpg%%`（手順3の `IMAGE_URL` の値）
+  - 画像が無い場合 → `%%HEADER_IMAGE%%` のまま（送信スクリプトが消す）
+  - この目印は送信直前に Apps Script が `<img>` に差し替える。**自分で `<img>` タグを書かない**（Gmailが削除するため）
 - `body`: 手順4のプレーンテキスト版
-- `attachments`: 画像が作れた場合のみ、以下1件だけを付ける
-  ```json
-  [{"filename": "aidigest_header.jpg", "mimeType": "image/jpeg", "inline": true, "content": "（/tmp/header.b64 の中身をそのまま）"}]
-  ```
-  - `filename` は **`aidigest_header.jpg` 固定**（送信スクリプトがこの名前で画像を探す）
-  - 画像が無い日は `attachments` を省略する（本文の `%%HEADER_IMAGE%%` はそのままでよい。送信スクリプトが消す）
+- `attachments`: **付けない**（画像はURLで渡すため添付は不要。base64を貼り付けると実行が止まる）
 
 作成後、`create_draft` が返した下書きIDを控える。
 
@@ -153,7 +155,7 @@ Gmailコネクターの `create_draft` を使う。
 
 以下を短く報告する:
 - カテゴリごとの掲載件数と、採用記事の公開日リスト
-- ヘッダー画像: 生成できたか / ファイルサイズ / できなかった場合は理由
+- ヘッダー画像: 生成できたか / ファイルサイズ / push できたか / できなかった場合は理由
 - 下書きID
 - 検索回数
 
