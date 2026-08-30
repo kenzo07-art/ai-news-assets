@@ -1,0 +1,57 @@
+<!-- Reusable fragments. Substitute the {{...}} values, repeat as needed. -->
+
+<!-- (1) SUMMARY_LI : one row per bullet, 3 rows total -->
+<tr>
+  <td width="18" valign="top" style="font-family:'Segoe UI',Meiryo,'Hiragino Kaku Gothic ProN',sans-serif;font-size:14px;line-height:1.7;color:#1d4ed8;mso-line-height-rule:exactly;">■</td>
+  <td valign="top" style="font-family:'Segoe UI',Meiryo,'Hiragino Kaku Gothic ProN',sans-serif;font-size:14px;line-height:1.7;color:#16233d;padding-bottom:6px;mso-line-height-rule:exactly;">{{SUMMARY_TEXT}}</td>
+</tr>
+
+<!-- (2) SECTION : one per category. {{CAT_COLOR}} e.g. #2f6fd0 -->
+<tr><td style="padding:22px 24px 0;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td width="6" bgcolor="{{CAT_COLOR}}" style="background-color:{{CAT_COLOR}};font-size:0;line-height:0;">&nbsp;</td>
+      <td style="padding-left:10px;font-family:'Segoe UI',Meiryo,'Hiragino Kaku Gothic ProN',sans-serif;font-size:17px;font-weight:bold;color:#16233d;">{{CAT_NAME}}</td>
+      <td align="right" style="font-family:'Segoe UI',Meiryo,'Hiragino Kaku Gothic ProN',sans-serif;font-size:12px;color:#7b879d;">{{CAT_COUNT}}件</td>
+    </tr>
+  </table>
+</td></tr>
+
+<!-- (3) CARD : one per news item -->
+<tr><td style="padding:12px 24px 0;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f8fafd" style="background-color:#f8fafd;border:1px solid #e2e8f2;">
+    <tr><td style="padding:16px 18px;">
+
+      <div style="font-family:'Segoe UI',Meiryo,'Hiragino Kaku Gothic ProN',sans-serif;font-size:12px;color:#7b879d;padding-bottom:6px;">
+        <span style="color:{{CAT_COLOR}};font-weight:bold;">{{STARS}}</span>&nbsp;&nbsp;{{SOURCE}}&nbsp;/&nbsp;{{PUB_DATE}}
+      </div>
+
+      <div style="font-family:'Segoe UI',Meiryo,'Hiragino Kaku Gothic ProN',sans-serif;font-size:16px;font-weight:bold;line-height:1.5;color:#16233d;padding-bottom:8px;mso-line-height-rule:exactly;">{{TITLE}}</div>
+
+      <div style="font-family:'Segoe UI',Meiryo,'Hiragino Kaku Gothic ProN',sans-serif;font-size:14px;line-height:1.8;color:#3c4759;padding-bottom:12px;mso-line-height-rule:exactly;">{{SUMMARY}}</div>
+
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#eef3fb" style="background-color:#eef3fb;">
+        <tr>
+          <td width="4" bgcolor="{{CAT_COLOR}}" style="background-color:{{CAT_COLOR}};font-size:0;line-height:0;">&nbsp;</td>
+          <td style="padding:10px 12px;font-family:'Segoe UI',Meiryo,'Hiragino Kaku Gothic ProN',sans-serif;font-size:13px;line-height:1.7;color:#243452;mso-line-height-rule:exactly;">
+            <strong style="color:{{CAT_COLOR}};">日本企業への影響</strong>　{{IMPACT}}
+          </td>
+        </tr>
+      </table>
+
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:12px;">
+        <tr><td bgcolor="{{CAT_COLOR}}" style="background-color:{{CAT_COLOR}};padding:9px 16px;">
+          <a href="{{URL}}" style="font-family:'Segoe UI',Meiryo,'Hiragino Kaku Gothic ProN',sans-serif;font-size:13px;font-weight:bold;color:#ffffff;text-decoration:none;">▶ 元記事を読む</a>
+        </td></tr>
+      </table>
+
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- (4) EMPTY_CATEGORY : use instead of cards when nothing qualified -->
+<tr><td style="padding:12px 24px 0;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f5f6f8" style="background-color:#f5f6f8;border:1px dashed #ccd3e0;">
+    <tr><td style="padding:14px 18px;font-family:'Segoe UI',Meiryo,'Hiragino Kaku Gothic ProN',sans-serif;font-size:13px;color:#7b879d;">本日該当する新規ニュースは見つかりませんでした（過去7日以内の該当記事なし）。</td></tr>
+  </table>
+</td></tr>

@@ -1,0 +1,30 @@
+<!-- AI News Digest — Gmail / Outlook compatible email body.
+     Rules: table layout only, inline styles only, no border-radius / flex / grid / gradient.
+     Placeholders: {{DATE_LABEL}} {{PERIOD}} {{SUMMARY_LI}} {{SECTIONS}} -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#eef1f6" style="margin:0;padding:0;background-color:#eef1f6;">
+<tr><td align="center" style="padding:16px 6px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="width:600px;max-width:600px;background-color:#ffffff;border:1px solid #d8dee9;">
+
+  <!-- header image: the Gmail connector strips <img>, so leave a token here and let
+       Apps Script (AINewsDispatch v2) swap it for the inline image right before sending. -->
+  <tr><td bgcolor="#0d1b38" style="background-color:#0d1b38;padding:0;font-size:1px;line-height:1px;color:#0d1b38;">%%HEADER_IMAGE%%</td></tr>
+
+  <!-- 3-line summary -->
+  <tr><td bgcolor="#f4f7fc" style="background-color:#f4f7fc;padding:18px 24px;border-bottom:1px solid #dde3ee;">
+    <div style="font-family:'Segoe UI',Meiryo,'Hiragino Kaku Gothic ProN',sans-serif;font-size:13px;font-weight:bold;color:#1d4ed8;letter-spacing:.04em;padding-bottom:8px;">{{DATE_LABEL}}　今日の要点</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      {{SUMMARY_LI}}
+    </table>
+  </td></tr>
+
+  {{SECTIONS}}
+
+  <tr><td bgcolor="#0d1b38" style="background-color:#0d1b38;padding:18px 24px;">
+    <div style="font-family:'Segoe UI',Meiryo,'Hiragino Kaku Gothic ProN',sans-serif;font-size:12px;line-height:1.7;color:#9fb3d4;mso-line-height-rule:exactly;">
+      ※このメールは毎朝7時に自動生成されています。<br>
+      集計対象期間：{{PERIOD}}（実行日から過去7日以内に公開された記事のみ）
+    </div>
+  </td></tr>
+
+</table>
+</td></tr></table>
