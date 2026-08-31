@@ -109,8 +109,8 @@ echo "IMAGE_URL=https://raw.githubusercontent.com/kenzo07-art/ai-news-assets/mai
 ```
 - 背景アート `$REPO/assets/bg_main.jpg` は自動で使われる。日本語フォントも自動で見つかる
 - **画像の base64 をメール本文やツールの引数に貼り付けてはいけない**（巨大すぎて実行が止まる）。画像の受け渡しは必ずこの push 経由で行う
-- push に成功したら、上の `IMAGE_URL=` の値を手順5で使う
-- 生成または push に失敗した場合は画像を諦め、手順5を「画像なし」で実行する（下書き作成は必ず行う）
+- **ファイル名は `daily/YYYY-MM-DD.jpg`（日本時間の当日）から変えない**。送信スクリプトはこの日付規則だけを頼りに画像を探すため、名前を変えると画像が出なくなる
+- 生成または push に失敗した場合は画像を諦め、そのまま手順4以降に進む（下書き作成は必ず行う）
 
 ---
 
@@ -140,10 +140,11 @@ Gmailコネクターの `create_draft` を使う。
 - `to`: `bknb.yone.ken@gmail.com` と `kenichiro.hayashi@persol.co.jp` の**両方**
 - `subject`: `【AIニュースダイジェスト】YYYY年MM月DD日（曜日）`
   - **このプレフィックスは絶対に変更しない**。送信用スクリプト（Apps Script）がこの文字列で下書きを見つけて送信しているため、変えると配信が止まる
-- `htmlBody`: 手順4のHTML。ただし本文中の `%%HEADER_IMAGE%%` を次のように置き換える:
-  - 画像を push できた場合 → `%%HEADER_IMAGE:https://raw.githubusercontent.com/kenzo07-art/ai-news-assets/main/daily/YYYY-MM-DD.jpg%%`（手順3の `IMAGE_URL` の値）
-  - 画像が無い場合 → `%%HEADER_IMAGE%%` のまま（送信スクリプトが消す）
-  - この目印は送信直前に Apps Script が `<img>` に差し替える。**自分で `<img>` タグを書かない**（Gmailが削除するため）
+- `htmlBody`: 手順4のHTML。本文中の `%%HEADER_IMAGE%%` は**そのまま残す**
+  - 送信直前に Apps Script が、その日の `daily/YYYY-MM-DD.jpg` を取得して `<img>` に差し替える
+  - **目印にURLを書き足さない**（GmailがURLを自動でリンク化して目印が壊れ、画像が出なくなる）
+  - **自分で `<img>` タグを書かない**（Gmailが削除するため）
+  - 画像を push できなかった日も目印はそのままでよい（Apps Script 側が空欄にする）
 - `body`: 手順4のプレーンテキスト版
 - `attachments`: **付けない**（画像はURLで渡すため添付は不要。base64を貼り付けると実行が止まる）
 
