@@ -32,14 +32,15 @@
 
 ### ツール利用ルール
 - Web検索のみ使用（ページ全文取得系は使わない）
-- 検索の合計呼び出し上限: 10回 / カテゴリ毎最大3回 / 同一クエリ再実行禁止
+- 検索の合計呼び出し上限: 14回 / カテゴリ毎最大4回 / 同一クエリ再実行禁止
 - 上限到達で即座に収集打切→次の手順へ
 - クエリには今週日付範囲を示す語（「今週」「this week」「past week」「YYYY年MM月」）を含める
+- 「日本のAI」「国内企業のAI活用」が0件になりやすい。この2カテゴリは**媒体名を直接指定したクエリを最低1回は投げる**（一般語だけの検索はまとめ記事ばかり当たって公開日が確認できず、結局0件になる）
 
 ### 推奨検索クエリ（年月は実行日に合わせ差替）
 - 世界: `OpenAI Anthropic Google AI news this week` / `AI 海外 最新ニュース 今週 YYYY年MM月` / `latest AI announcement past 7 days`
-- 日本: `AI 日本 最新ニュース 今週` / `生成AI 日本 ニュース YYYY年MM月DD日` / `ITmedia AI＋ OR ledge.ai 最新 今週`
-- 国内企業活用: `日本企業 生成AI 導入 発表 今週 YYYY年MM月` / `AI 活用 事例 国内 製造業 OR 金融 OR 小売 YYYY年MM月` / `企業 ChatGPT OR Claude 業務活用 日本 最新`
+- 日本: `site:itmedia.co.jp AI YYYY年MM月` / `site:impress.co.jp OR site:ledge.ai 生成AI 最新` / `AI 日本 最新ニュース 今週` / `生成AI 日本 ニュース YYYY年MM月DD日`
+- 国内企業活用: `site:prtimes.jp 生成AI 導入 YYYY年MM月` / `site:nikkei.com OR site:xtech.nikkei.com AI 導入 企業 YYYY年MM月` / `日本企業 生成AI 導入 発表 今週 YYYY年MM月` / `AI 活用 事例 国内 製造業 OR 金融 OR 小売 YYYY年MM月`
 - フィジカルAI: `ヒューマノイド ロボット ニュース 今週 YYYY年MM月` / `physical AI humanoid robot news this week` / `自動運転 ロボティクス 最新 YYYY年MM月`
 
 ### 各ニュースについて用意する情報
