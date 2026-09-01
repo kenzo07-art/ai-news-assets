@@ -3,7 +3,7 @@
 ## 全体の流れ
 1. ニュース収集（WebSearch）
 2. `/tmp/digest.json` を書く
-3. ヘッダー画像（本日の一覧を1枚にまとめた画像）を生成し、リポジトリに push する
+3. ヘッダー画像とアーカイブMarkdownを作り、リポジトリに push する
 4. HTMLメール本文を組み立てる
 5. Gmail下書きを作成する（画像はURLで渡す。添付もbase64も使わない）
 6. 結果を報告する
@@ -98,15 +98,49 @@ REPO=$(git rev-parse --show-toplevel 2>/dev/null || pwd); echo "REPO=$REPO"; ls 
 ```
 `compose_header.py` が見つからない場合はリポジトリを取得できていない。その時は画像生成を諦め、手順5を「画像なし」で実行する。
 
-### 3-3. 画像を作ってリポジトリに push する
+### 3-3. アーカイブ用の Markdown を書く
+Write ツールで `$REPO/archive/YYYY-MM-DD.md`（日本時間の当日）を作る。ken さんの Obsidian に取り込まれ、あとから「あの話いつだっけ」を引くための記録になる。**書式を変えない**（取り込みスクリプトが見出しを頼りにしている）:
+
+```markdown
+---
+date: 2026-09-01
+period: 2026-08-25 〜 2026-09-01
+---
+
+## 今日の要点
+- （1行目）
+- （2行目）
+- （3行目）
+
+## 世界のAIニュース
+### ★★★ 記事タイトル
+- 出典: ITmedia / 2026-08-28
+- URL: https://...
+- 要約: （2〜3文）
+- 日本企業への影響: （1〜2文）
+
+### ★★☆ 次の記事タイトル
+（同じ形で続ける）
+
+## 日本のAIニュース
+（該当なしのカテゴリは `- 該当なし（過去7日以内の該当記事なし）` の1行だけ書く）
+
+## 国内企業のAI活用事例
+
+## フィジカルAIニュース
+```
+
+- 絵文字は使わない
+- URL は本文と同じ実URL（Gmail経由の転送URLではない生のURL）を書く
+
+### 3-4. 画像を作って、Markdown と一緒に push する
 ```bash
 TODAY=$(TZ=Asia/Tokyo date +%Y-%m-%d)
-mkdir -p "$REPO/daily"
+mkdir -p "$REPO/daily" "$REPO/archive"
 python3 "$REPO/compose_header.py" /tmp/digest.json -o "$REPO/daily/$TODAY.jpg" && ls -l "$REPO/daily/$TODAY.jpg"
-cd "$REPO" && git add "daily/$TODAY.jpg" \
-  && git -c user.email=ai-news-bot@example.com -c user.name="ai-news-bot" commit -q -m "daily header $TODAY" \
+cd "$REPO" && git add "daily/$TODAY.jpg" "archive/$TODAY.md" \
+  && git -c user.email=ai-news-bot@example.com -c user.name="ai-news-bot" commit -q -m "digest $TODAY" \
   && git push origin HEAD:main 2>&1 | tail -3
-echo "IMAGE_URL=https://raw.githubusercontent.com/kenzo07-art/ai-news-assets/main/daily/$TODAY.jpg"
 ```
 - 背景アート `$REPO/assets/bg_main.jpg` は自動で使われる。日本語フォントも自動で見つかる
 - **画像の base64 をメール本文やツールの引数に貼り付けてはいけない**（巨大すぎて実行が止まる）。画像の受け渡しは必ずこの push 経由で行う
@@ -158,7 +192,7 @@ Gmailコネクターの `create_draft` を使う。
 
 以下を短く報告する:
 - カテゴリごとの掲載件数と、採用記事の公開日リスト
-- ヘッダー画像: 生成できたか / ファイルサイズ / push できたか / できなかった場合は理由
+- ヘッダー画像とアーカイブMarkdown: 作れたか / push できたか / できなかった場合は理由
 - 下書きID
 - 検索回数
 
