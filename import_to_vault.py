@@ -2,8 +2,11 @@
 """Import the daily AI news digests from this repo into ken's Obsidian vault.
 
 The cloud routine pushes one `archive/YYYY-MM-DD.md` per morning. This script
-pulls those and appends any not-yet-imported day into a monthly log inside the
-project folder, then commits the vault.
+reads those from origin/main and appends any not-yet-imported day into a monthly
+log inside the project folder, then commits the vault.
+
+Codex writes the ChatGPT/Codex delivery into the same monthly log, so every
+entry is labelled with the side it came from.
 
 Idempotent: a day already present in the monthly file is skipped, so running it
 twice — or after the Mac was off for a week — does the right thing.
@@ -20,7 +23,7 @@ import subprocess
 import sys
 
 REPO = os.path.dirname(os.path.abspath(__file__))
-ARCHIVE_DIR = os.path.join(REPO, "archive")
+# archive entries are read from origin/main, not from the working tree
 VAULT = "/Users/ken/Documents/Obsidian Vault"
 LOG_DIR = os.path.join(VAULT, "20_Projects", "AIニュース毎朝配信", "log")
 WEEKDAYS = ["月", "火", "水", "木", "金", "土", "日"]
@@ -52,15 +55,15 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
-    run(["git", "pull", "--rebase", "--quiet", "origin", "main"], cwd=REPO)
-
-    if not os.path.isdir(ARCHIVE_DIR):
-        print("no archive/ yet — nothing to import")
-        return
+    # Read the archive straight out of origin/main rather than the working tree:
+    # a half-finished local edit must never stop the morning import.
+    run(["git", "fetch", "--quiet", "origin", "main"], cwd=REPO)
+    listing = run(["git", "ls-tree", "--name-only", "origin/main", "archive/"],
+                  cwd=REPO, check=False)
 
     days = sorted(
-        f[:-3] for f in os.listdir(ARCHIVE_DIR)
-        if re.fullmatch(r"\d{4}-\d{2}-\d{2}\.md", f)
+        os.path.basename(line)[:-3] for line in listing.splitlines()
+        if re.fullmatch(r"archive/\d{4}-\d{2}-\d{2}\.md", line.strip())
     )
     if not days:
         print("no archive entries — nothing to import")
@@ -72,13 +75,15 @@ def main():
     for day in days:
         month = day[:7]
         target = os.path.join(LOG_DIR, f"{month}.md")
-        marker = f"<!-- imported: {day} -->"
+        marker = f"<!-- imported: {day}-claude -->"
+        # entries written before the log was shared with Codex carried no side suffix
+        legacy_marker = f"<!-- imported: {day} -->"
 
         existing = ""
         if os.path.exists(target):
             with open(target, encoding="utf-8") as f:
                 existing = f.read()
-            if marker in existing:
+            if marker in existing or legacy_marker in existing:
                 continue
         else:
             existing = (
@@ -88,16 +93,19 @@ def main():
                 f"month: {month}\n"
                 "---\n\n"
                 f"# AIニュース配信ログ {month}\n\n"
-                "> 毎朝7時に配信したダイジェストの記録。自動生成なので直接編集しない"
-                "（編集しても翌日の追記で困らないが、原本は GitHub の ai-news-assets/archive にある）。\n\n"
+                "> 毎朝配信したダイジェストの記録。Claude側（7:00）とChatGPT/Codex側（8:00）の"
+                "両方が追記するので、見出しに配信元を書く。自動生成なので直接編集しない"
+                "（Claude側の原本は GitHub の ai-news-assets/archive にある）。\n\n"
                 "---\n"
             )
 
-        with open(os.path.join(ARCHIVE_DIR, f"{day}.md"), encoding="utf-8") as f:
-            body = demote_headings(strip_frontmatter(f.read())).strip()
+        raw = run(["git", "show", f"origin/main:archive/{day}.md"], cwd=REPO)
+        body = demote_headings(strip_frontmatter(raw)).strip()
 
+        # the log is shared with Codex, which records the ChatGPT/Codex delivery in
+        # the same file — always say which side an entry came from
         d = datetime.date.fromisoformat(day)
-        block = f"\n## {day}（{WEEKDAYS[d.weekday()]}）\n{marker}\n\n{body}\n\n---\n"
+        block = f"\n## {day}（{WEEKDAYS[d.weekday()]}）Claude配信\n{marker}\n\n{body}\n\n---\n"
 
         if args.dry_run:
             print(f"[dry-run] would append {day} to {target}")
