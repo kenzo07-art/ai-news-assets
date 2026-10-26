@@ -58,6 +58,14 @@ def run(cmd, cwd=None, check=True):
     return r.stdout.strip()
 
 
+def ensure_clean_target(path):
+    """Never absorb another writer's pending changes into an automatic update."""
+    relative = os.path.relpath(path, VAULT)
+    status = run(["git", "status", "--porcelain", "--", relative], cwd=VAULT)
+    if status:
+        raise SystemExit(f"ERROR: pending changes in target; left untouched: {relative}")
+
+
 def strip_frontmatter(text):
     if text.startswith("---"):
         end = text.find("\n---", 3)
@@ -123,6 +131,7 @@ def write_day_section(day, side, body, dry_run=False):
         print(f"[dry-run] would write {heading} into {path}")
         return None
 
+    ensure_clean_target(path)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         f.write(existing.rstrip("\n") + "\n" + block)
@@ -197,20 +206,37 @@ def rebuild_index(month, dry_run=False):
     if dry_run:
         print(f"[dry-run] would rebuild {path}（{len(rows)}日分）")
         return None
+    ensure_clean_target(path)
     with open(path, "w", encoding="utf-8") as f:
         f.write(content)
     return path
 
 
 def commit(paths, message):
-    # commit only the files this script wrote, so a concurrent edit elsewhere
-    # in the vault is never swept into our commit
-    for path in sorted(set(paths)):
-        run(["git", "add", path], cwd=VAULT)
-    if run(["git", "diff", "--cached", "--name-only"], cwd=VAULT):
+    # --only preserves unrelated staged changes as well as unstaged ones.
+    relative = sorted({os.path.relpath(path, VAULT) for path in paths})
+    if not relative:
+        return
+    for path in relative:
+        run(["git", "add", "--", path], cwd=VAULT)
+    if run(["git", "diff", "--cached", "--name-only", "--", *relative], cwd=VAULT):
         run(["git", "-c", "user.email=bknb.yone.ken@gmail.com", "-c", "user.name=ken",
-             "commit", "-q", "-m", message], cwd=VAULT)
+             "commit", "--only", "-q", "-m", message, "--", *relative], cwd=VAULT)
         print("committed to the vault")
+
+
+def preflight_targets(days):
+    """Check the full batch before writing, so a later conflict leaves no half import."""
+    for day in days:
+        path = day_path(day)
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as f:
+                existing = f.read()
+            if any(marker in existing for marker in markers(day, "claude")):
+                continue
+        ensure_clean_target(path)
+    for month in sorted({day[:7] for day in days}):
+        ensure_clean_target(index_path(month))
 
 
 def main():
@@ -245,15 +271,18 @@ def main():
         print("no archive entries — nothing to import")
         return
 
-    os.makedirs(LOG_DIR, exist_ok=True)
+    if not args.dry_run:
+        preflight_targets(days)
+        os.makedirs(LOG_DIR, exist_ok=True)
     touched, imported = [], []
 
     for day in days:
         path = day_path(day)
         if os.path.exists(path):
             with open(path, encoding="utf-8") as f:
-                if any(m in f.read() for m in markers(day, "claude")):
-                    continue
+                existing = f.read()
+            if any(m in existing for m in markers(day, "claude")):
+                continue
 
         raw = run(["git", "show", f"origin/main:archive/{day}.md"], cwd=REPO)
         body = demote_headings(strip_frontmatter(raw))
